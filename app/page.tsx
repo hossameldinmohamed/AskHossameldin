@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { after } from "next/server";
 
-import { AskWidget } from "@/components/ask/ask-widget";
+import { AskCard } from "@/components/ask/ask-card";
 import { Hero } from "@/components/hero";
 import { SiteFooter } from "@/components/site-footer";
 import { Wall } from "@/components/wall/wall";
@@ -33,8 +33,8 @@ export default async function HomePage() {
   return (
     <>
       <Hero answeredCount={totalCount} />
+      <AskCard />
       <Wall initialItems={page.items} initialCursor={page.nextCursor} />
-      {page.items.length > 0 && <AskWidget />}
       <SiteFooter />
     </>
   );

@@ -1,3 +1,4 @@
+import { HelpIcon } from "@/components/icons";
 import { FollowUpButton } from "@/components/wall/follow-up-button";
 import { RichAnswer } from "@/components/wall/rich-answer";
 import { ShareButton } from "@/components/wall/share-button";
@@ -9,10 +10,10 @@ function QuestionBlock({ item }: { item: PublicQuestion }) {
   return (
     <div className="flex items-start gap-3">
       <span
-        className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-xs font-semibold text-muted"
-        aria-hidden="true"
+        className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted"
+        aria-label="Anonymous question"
       >
-        ?
+        <HelpIcon className="size-3.5" />
       </span>
       <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/95">
         {item.content}
@@ -30,7 +31,7 @@ function AnswerBlock({ item, isRoot }: { item: PublicQuestion; isRoot: boolean }
     <div className={isRoot ? "mt-4 border-t border-border pt-4" : "mt-3 border-t border-border pt-3"}>
       <div className="flex items-start gap-3">
         <span
-          className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-xs font-bold text-black"
+          className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-xs font-bold text-black ring-2 ring-accent-b/20 ring-offset-2 ring-offset-surface"
           title={siteConfig.name}
           aria-label={siteConfig.name}
         >
