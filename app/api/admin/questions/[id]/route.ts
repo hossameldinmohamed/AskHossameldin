@@ -17,6 +17,7 @@ const returningFields = {
   status: questions.status,
   createdAt: questions.createdAt,
   answeredAt: questions.answeredAt,
+  parentId: questions.parentId,
 };
 
 const patchSchema = z.discriminatedUnion("action", [

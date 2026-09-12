@@ -1,10 +1,13 @@
 import { asc, desc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { isAdminRequest } from "@/lib/auth/require-admin";
 import { db } from "@/lib/db";
 import { questions } from "@/lib/db/schema";
-import { isAdminRequest } from "@/lib/auth/require-admin";
+
+const parentQuestions = alias(questions, "parent_questions");
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest())) {
@@ -24,8 +27,11 @@ export async function GET(request: NextRequest) {
       status: questions.status,
       createdAt: questions.createdAt,
       answeredAt: questions.answeredAt,
+      parentId: questions.parentId,
+      parentContent: parentQuestions.content,
     })
     .from(questions)
+    .leftJoin(parentQuestions, eq(questions.parentId, parentQuestions.id))
     .where(eq(questions.status, status as "pending" | "answered" | "rejected"))
     .orderBy(status === "pending" ? asc(questions.createdAt) : desc(questions.createdAt))
     .limit(200);

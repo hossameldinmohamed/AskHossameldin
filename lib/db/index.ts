@@ -8,7 +8,6 @@ import * as schema from "./schema";
 // pooled connection string (e.g. Neon's PgBouncer endpoint) to avoid
 // exhausting the database's connection limit.
 declare global {
-  // eslint-disable-next-line no-var
   var __pgPool: Pool | undefined;
 }
 

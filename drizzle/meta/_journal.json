@@ -8,6 +8,13 @@
       "when": 1789218420838,
       "tag": "0000_panoramic_thing",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789222977904,
+      "tag": "0001_spooky_nick_fury",
+      "breakpoints": true
     }
   ]
 }

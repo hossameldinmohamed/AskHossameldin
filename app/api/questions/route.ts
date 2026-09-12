@@ -1,10 +1,11 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { questions } from "@/lib/db/schema";
+import { getWallPage } from "@/lib/queries/wall";
 import { getClientIp, hashIp } from "@/lib/security/ip";
 import {
   looksLikeSpam,
@@ -14,8 +15,6 @@ import {
 } from "@/lib/security/content";
 import { checkRateLimit, recordRateLimitEvent } from "@/lib/security/rate-limit";
 
-const PAGE_SIZE = 12;
-
 export async function GET(request: NextRequest) {
   const cursorParam = request.nextUrl.searchParams.get("cursor");
   const cursor = cursorParam ? new Date(cursorParam) : null;
@@ -24,33 +23,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
   }
 
-  const rows = await db
-    .select({
-      id: questions.id,
-      content: questions.content,
-      answer: questions.answer,
-      answeredAt: questions.answeredAt,
-    })
-    .from(questions)
-    .where(
-      cursor
-        ? and(eq(questions.status, "answered"), lt(questions.answeredAt, cursor))
-        : eq(questions.status, "answered"),
-    )
-    .orderBy(desc(questions.answeredAt))
-    .limit(PAGE_SIZE + 1);
-
-  const hasMore = rows.length > PAGE_SIZE;
-  const items = rows.slice(0, PAGE_SIZE);
-  const nextCursor = hasMore ? items[items.length - 1]?.answeredAt?.toISOString() ?? null : null;
-
-  return NextResponse.json({ items, nextCursor });
+  const page = await getWallPage(cursor);
+  return NextResponse.json(page);
 }
 
 const submitSchema = z.object({
   content: z.string().min(1).max(QUESTION_MAX_LENGTH * 2), // generous pre-sanitize cap
   website: z.string().max(200).optional().default(""), // honeypot, must stay empty
   renderedAt: z.number().optional(),
+  parentId: z.string().uuid().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -73,7 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid input." }, { status: 400 });
   }
 
-  const { content, website, renderedAt } = parsed.data;
+  const { content, website, renderedAt, parentId } = parsed.data;
 
   // Honeypot field: real users never fill this in. Pretend success so bots
   // don't learn to look elsewhere.
@@ -106,6 +87,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // A follow-up may only target a question that's already public (answered)
+  // and is itself a root - this keeps threads exactly one level deep, which
+  // is all the UI ever offers a "Follow up" button for.
+  let validatedParentId: string | null = null;
+  if (parentId) {
+    const [parent] = await db
+      .select({ id: questions.id, parentId: questions.parentId, status: questions.status })
+      .from(questions)
+      .where(eq(questions.id, parentId));
+
+    if (!parent || parent.status !== "answered" || parent.parentId !== null) {
+      return NextResponse.json({ error: "That question can't be followed up on." }, { status: 400 });
+    }
+    validatedParentId = parent.id;
+  }
+
   const ip = getClientIp(request);
   const ipHash = await hashIp(ip);
 
@@ -121,7 +118,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await db.insert(questions).values({ content: sanitized, ipHash });
+  await db.insert(questions).values({ content: sanitized, ipHash, parentId: validatedParentId });
   await recordRateLimitEvent(rateLimitKey);
 
   return NextResponse.json({ ok: true });

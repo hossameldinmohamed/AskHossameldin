@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AskForm } from "@/components/ask/ask-form";
 import { ArrowDownIcon, SparkleIcon, SpinnerIcon } from "@/components/icons";
 import type { PublicQuestion } from "@/lib/types";
 
@@ -37,12 +38,17 @@ export function Wall({ initialItems, initialCursor }: WallProps) {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
-        <SparkleIcon className="size-8 text-accent-b" />
-        <h2 className="text-lg font-semibold">No questions yet</h2>
-        <p className="text-sm text-muted">
-          Be the first to send an anonymous question — it&apos;ll show up here once it&apos;s answered.
-        </p>
+      <div className="mx-auto w-full max-w-lg px-4 pb-24 sm:px-6">
+        <div className="flex flex-col items-center gap-2 pb-6 text-center">
+          <SparkleIcon className="size-7 text-accent-b" />
+          <h2 className="text-lg font-semibold">Be the first to ask</h2>
+          <p className="text-sm text-muted">
+            Send an anonymous question below — it&apos;ll show up here once it&apos;s answered.
+          </p>
+        </div>
+        <div className="rounded-3xl border border-border bg-surface p-6 sm:p-8">
+          <AskForm />
+        </div>
       </div>
     );
   }

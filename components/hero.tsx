@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/site";
 
-export function Hero() {
+export function Hero({ answeredCount }: { answeredCount: number }) {
   return (
     <header className="relative overflow-hidden px-6 pb-14 pt-20 text-center sm:pb-20 sm:pt-28">
       <div className="mx-auto flex max-w-2xl flex-col items-center animate-fade-in-up">
@@ -14,6 +14,12 @@ export function Hero() {
         <p className="mt-2 text-xs uppercase tracking-wide text-muted/70">
           100% anonymous · no login required
         </p>
+        {answeredCount > 0 && (
+          <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+            <span className="text-gradient font-semibold">{answeredCount}</span>
+            {answeredCount === 1 ? "question answered" : "questions answered"}
+          </p>
+        )}
       </div>
     </header>
   );

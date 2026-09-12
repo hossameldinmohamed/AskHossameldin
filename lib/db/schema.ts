@@ -1,3 +1,4 @@
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const questionStatus = pgEnum("question_status", [
@@ -10,6 +11,11 @@ export const questions = pgTable(
   "questions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // Self-reference: set when this question is a public follow-up to an
+    // already-answered question. Null for root questions.
+    parentId: uuid("parent_id").references((): AnyPgColumn => questions.id, {
+      onDelete: "set null",
+    }),
     content: text("content").notNull(),
     answer: text("answer"),
     status: questionStatus("status").notNull().default("pending"),
@@ -23,6 +29,7 @@ export const questions = pgTable(
     index("questions_status_answered_idx").on(table.status, table.answeredAt),
     index("questions_status_created_idx").on(table.status, table.createdAt),
     index("questions_ip_hash_created_idx").on(table.ipHash, table.createdAt),
+    index("questions_parent_id_idx").on(table.parentId),
   ],
 );
 

@@ -48,6 +48,11 @@ export function PendingItem({ item, onAnswered, onRejected }: PendingItemProps) 
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
+      {item.parentId && (
+        <p className="mb-2 truncate text-xs text-accent-b">
+          Follow-up to: &ldquo;{item.parentContent ?? "a previous question"}&rdquo;
+        </p>
+      )}
       <div className="flex items-start justify-between gap-3">
         <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
         <span className="shrink-0 text-xs text-muted">{formatRelativeTime(item.createdAt)}</span>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
-import { formatRelativeTime } from "@/lib/format";
+import { formatAbsoluteTime, formatRelativeTime } from "@/lib/format";
 import type { AdminQuestion } from "@/lib/types";
 
 export function HistoryItem({
@@ -30,8 +30,15 @@ export function HistoryItem({
     }
   }
 
+  const timestamp = item.status === "answered" && item.answeredAt ? item.answeredAt : item.createdAt;
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
+      {item.parentId && (
+        <p className="mb-2 truncate text-xs text-accent-b">
+          Follow-up to: &ldquo;{item.parentContent ?? "a previous question"}&rdquo;
+        </p>
+      )}
       <div className="flex items-start justify-between gap-3">
         <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
         <button
@@ -51,7 +58,7 @@ export function HistoryItem({
         </p>
       )}
 
-      <p className="mt-2 text-xs text-muted">
+      <p className="mt-2 text-xs text-muted" title={formatAbsoluteTime(timestamp)}>
         {item.status === "answered" && item.answeredAt
           ? `Answered ${formatRelativeTime(item.answeredAt)}`
           : `Rejected · asked ${formatRelativeTime(item.createdAt)}`}

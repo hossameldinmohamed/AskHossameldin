@@ -23,3 +23,12 @@ export function formatRelativeTime(isoDate: string): string {
   }
   return rtf.format(Math.round(seconds / 60), "minute");
 }
+
+const absoluteTimeFormat = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+export function formatAbsoluteTime(isoDate: string): string {
+  return absoluteTimeFormat.format(new Date(isoDate));
+}

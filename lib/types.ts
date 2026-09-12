@@ -3,6 +3,7 @@ export interface PublicQuestion {
   content: string;
   answer: string | null;
   answeredAt: string | null;
+  followUps?: PublicQuestion[];
 }
 
 export type QuestionStatus = "pending" | "answered" | "rejected";
@@ -14,4 +15,6 @@ export interface AdminQuestion {
   status: QuestionStatus;
   createdAt: string;
   answeredAt: string | null;
+  parentId: string | null;
+  parentContent?: string | null;
 }
