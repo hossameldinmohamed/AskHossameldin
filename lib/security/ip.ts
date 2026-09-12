@@ -1,15 +1,19 @@
-import type { NextRequest } from "next/server";
+interface HeaderLike {
+  get(name: string): string | null;
+}
 
 /**
  * Best-effort client IP extraction behind Vercel's proxy. Never trusted for
- * anything beyond rate limiting / abuse mitigation.
+ * anything beyond rate limiting / abuse mitigation. Accepts anything with a
+ * `.get()` method so it works both from a Route Handler's `request.headers`
+ * and from a Server Component's `headers()`.
  */
-export function getClientIp(request: NextRequest | Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
+export function getClientIp(headers: HeaderLike): string {
+  const forwardedFor = headers.get("x-forwarded-for");
   if (forwardedFor) {
     return forwardedFor.split(",")[0]!.trim();
   }
-  const realIp = request.headers.get("x-real-ip");
+  const realIp = headers.get("x-real-ip");
   if (realIp) return realIp.trim();
   return "unknown";
 }

@@ -122,12 +122,13 @@ export function AskForm({
   return (
     <form onSubmit={handleSubmit}>
       {parentPreview && (
-        <p className="mb-3 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs text-muted">
+        <p dir="auto" className="mb-3 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs text-muted">
           Following up on: <span className="italic">&ldquo;{parentPreview}&rdquo;</span>
         </p>
       )}
       <textarea
         ref={textareaRef}
+        dir="auto"
         value={content}
         onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
         maxLength={MAX_LENGTH}

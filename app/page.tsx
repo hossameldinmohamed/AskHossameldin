@@ -1,18 +1,41 @@
+import { headers } from "next/headers";
+import { after } from "next/server";
+
 import { AskWidget } from "@/components/ask/ask-widget";
 import { Hero } from "@/components/hero";
+import { SiteFooter } from "@/components/site-footer";
 import { Wall } from "@/components/wall/wall";
+import { isAdminRequest } from "@/lib/auth/require-admin";
+import { recordPageView } from "@/lib/queries/analytics";
 import { getAnsweredCount, getWallPage } from "@/lib/queries/wall";
+import { getClientIp, hashIp } from "@/lib/security/ip";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [page, totalCount] = await Promise.all([getWallPage(null), getAnsweredCount()]);
+  const [page, totalCount, isAdmin, requestHeaders] = await Promise.all([
+    getWallPage(null),
+    getAnsweredCount(),
+    isAdminRequest(),
+    headers(),
+  ]);
+
+  // Don't count the admin's own visits, and don't block the response on
+  // recording the view - it runs after the page has already been sent.
+  if (!isAdmin) {
+    after(async () => {
+      const ip = getClientIp(requestHeaders);
+      const ipHash = await hashIp(ip);
+      await recordPageView(ipHash);
+    });
+  }
 
   return (
     <>
       <Hero answeredCount={totalCount} />
       <Wall initialItems={page.items} initialCursor={page.nextCursor} />
       {page.items.length > 0 && <AskWidget />}
+      <SiteFooter />
     </>
   );
 }

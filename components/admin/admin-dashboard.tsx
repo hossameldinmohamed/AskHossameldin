@@ -5,7 +5,8 @@ import { useState } from "react";
 
 import { HistoryItem } from "@/components/admin/history-item";
 import { PendingItem } from "@/components/admin/pending-item";
-import { SpinnerIcon } from "@/components/icons";
+import { ArrowDownIcon, SpinnerIcon } from "@/components/icons";
+import type { AnalyticsSummary } from "@/lib/queries/analytics";
 import type { AdminQuestion, QuestionStatus } from "@/lib/types";
 
 const TABS: { key: QuestionStatus; label: string }[] = [
@@ -14,15 +15,52 @@ const TABS: { key: QuestionStatus; label: string }[] = [
   { key: "rejected", label: "Rejected" },
 ];
 
-export function AdminDashboard({ initialPending }: { initialPending: AdminQuestion[] }) {
+interface TabState {
+  items: AdminQuestion[];
+  cursor: string | null;
+}
+
+function AnalyticsBar({ analytics }: { analytics: AnalyticsSummary }) {
+  const stats = [
+    { label: "Visitors today", value: analytics.todayUnique },
+    { label: "Views today", value: analytics.todayViews },
+    { label: "Visitors all-time", value: analytics.totalUnique },
+    { label: "Views all-time", value: analytics.totalViews },
+  ];
+
+  return (
+    <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {stats.map((stat) => (
+        <div key={stat.label} className="rounded-2xl border border-border bg-surface px-3 py-2.5 text-center">
+          <p className="text-lg font-semibold text-gradient">{stat.value}</p>
+          <p className="text-[11px] text-muted">{stat.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AdminDashboard({
+  initialPending,
+  initialPendingCursor,
+  pendingCount,
+  analytics,
+}: {
+  initialPending: AdminQuestion[];
+  initialPendingCursor: string | null;
+  pendingCount: number;
+  analytics: AnalyticsSummary;
+}) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<QuestionStatus>("pending");
-  const [cache, setCache] = useState<Record<QuestionStatus, AdminQuestion[] | null>>({
-    pending: initialPending,
+  const [cache, setCache] = useState<Record<QuestionStatus, TabState | null>>({
+    pending: { items: initialPending, cursor: initialPendingCursor },
     answered: null,
     rejected: null,
   });
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pendingCountState, setPendingCountState] = useState(pendingCount);
 
   async function selectTab(tab: QuestionStatus) {
     setActiveTab(tab);
@@ -32,37 +70,67 @@ export function AdminDashboard({ initialPending }: { initialPending: AdminQuesti
       const res = await fetch(`/api/admin/questions?status=${tab}`);
       if (res.ok) {
         const data = await res.json();
-        setCache((prev) => ({ ...prev, [tab]: data.items }));
+        setCache((prev) => ({ ...prev, [tab]: { items: data.items, cursor: data.nextCursor } }));
       }
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadMore() {
+    const current = cache[activeTab];
+    if (!current?.cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/admin/questions?status=${activeTab}&cursor=${encodeURIComponent(current.cursor)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setCache((prev) => ({
+          ...prev,
+          [activeTab]: { items: [...current.items, ...data.items], cursor: data.nextCursor },
+        }));
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   function handleAnswered(item: AdminQuestion) {
+    setPendingCountState((n) => Math.max(0, n - 1));
     setCache((prev) => ({
       ...prev,
-      pending: (prev.pending ?? []).filter((q) => q.id !== item.id),
-      answered: prev.answered ? [item, ...prev.answered] : prev.answered,
+      pending: prev.pending
+        ? { ...prev.pending, items: prev.pending.items.filter((q) => q.id !== item.id) }
+        : prev.pending,
+      answered: prev.answered ? { ...prev.answered, items: [item, ...prev.answered.items] } : prev.answered,
     }));
   }
 
   function handleRejected(id: string) {
+    setPendingCountState((n) => Math.max(0, n - 1));
     setCache((prev) => {
-      const rejectedItem = prev.pending?.find((q) => q.id === id);
+      const rejectedItem = prev.pending?.items.find((q) => q.id === id);
       return {
         ...prev,
-        pending: (prev.pending ?? []).filter((q) => q.id !== id),
+        pending: prev.pending
+          ? { ...prev.pending, items: prev.pending.items.filter((q) => q.id !== id) }
+          : prev.pending,
         rejected:
           prev.rejected && rejectedItem
-            ? [{ ...rejectedItem, status: "rejected" as const }, ...prev.rejected]
+            ? { ...prev.rejected, items: [{ ...rejectedItem, status: "rejected" as const }, ...prev.rejected.items] }
             : prev.rejected,
       };
     });
   }
 
   function handleDeleted(tab: QuestionStatus, id: string) {
-    setCache((prev) => ({ ...prev, [tab]: (prev[tab] ?? []).filter((q) => q.id !== id) }));
+    setCache((prev) => {
+      const tabState = prev[tab];
+      if (!tabState) return prev;
+      return { ...prev, [tab]: { ...tabState, items: tabState.items.filter((q) => q.id !== id) } };
+    });
   }
 
   async function handleLogout() {
@@ -71,7 +139,8 @@ export function AdminDashboard({ initialPending }: { initialPending: AdminQuesti
     router.refresh();
   }
 
-  const items = cache[activeTab] ?? [];
+  const tabState = cache[activeTab];
+  const items = tabState?.items ?? [];
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
@@ -86,6 +155,8 @@ export function AdminDashboard({ initialPending }: { initialPending: AdminQuesti
         </button>
       </div>
 
+      <AnalyticsBar analytics={analytics} />
+
       <div className="mt-6 flex gap-1 rounded-full border border-border bg-surface p-1">
         {TABS.map((tab) => (
           <button
@@ -97,8 +168,8 @@ export function AdminDashboard({ initialPending }: { initialPending: AdminQuesti
             }`}
           >
             {tab.label}
-            {tab.key === "pending" && (cache.pending?.length ?? 0) > 0 && (
-              <span className="ml-1.5">({cache.pending?.length})</span>
+            {tab.key === "pending" && pendingCountState > 0 && (
+              <span className="ml-1.5">({pendingCountState})</span>
             )}
           </button>
         ))}
@@ -130,6 +201,24 @@ export function AdminDashboard({ initialPending }: { initialPending: AdminQuesti
               onDeleted={(id) => handleDeleted(activeTab, id)}
             />
           ))}
+
+        {!loading && tabState?.cursor && (
+          <div className="mt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-surface-hover disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <SpinnerIcon className="size-4 animate-spin-slow" />
+              ) : (
+                <ArrowDownIcon className="size-4" />
+              )}
+              Load more
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -1,6 +1,9 @@
 export const QUESTION_MAX_LENGTH = 1500;
 export const QUESTION_MIN_LENGTH = 3;
-export const ANSWER_MAX_LENGTH = 3000;
+// Answers are admin-authored (a trusted actor, not anonymous public input),
+// so there's no UX-facing cap - just a generous technical ceiling far beyond
+// any real answer, to bound worst-case payload/storage size.
+export const ANSWER_MAX_LENGTH = 20_000;
 
 // Matches C0/C1 control characters, excluding tab (U+0009) and newline
 // (U+000A). Built from \u escapes (rather than literal bytes) so the source

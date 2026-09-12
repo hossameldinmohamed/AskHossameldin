@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     validatedParentId = parent.id;
   }
 
-  const ip = getClientIp(request);
+  const ip = getClientIp(request.headers);
   const ipHash = await hashIp(ip);
 
   const rateLimitKey = `submit:${ipHash}`;

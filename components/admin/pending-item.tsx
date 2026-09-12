@@ -49,28 +49,27 @@ export function PendingItem({ item, onAnswered, onRejected }: PendingItemProps) 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
       {item.parentId && (
-        <p className="mb-2 truncate text-xs text-accent-b">
+        <p dir="auto" className="mb-2 truncate text-xs text-accent-b">
           Follow-up to: &ldquo;{item.parentContent ?? "a previous question"}&rdquo;
         </p>
       )}
       <div className="flex items-start justify-between gap-3">
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
+        <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
         <span className="shrink-0 text-xs text-muted">{formatRelativeTime(item.createdAt)}</span>
       </div>
 
       <textarea
+        dir="auto"
         value={answer}
         onChange={(e) => setAnswer(e.target.value.slice(0, ANSWER_MAX_LENGTH))}
-        placeholder="Write your answer…"
-        rows={3}
+        placeholder="Write your answer… (links to YouTube videos will show up as an embedded player)"
+        rows={5}
         disabled={busy !== null}
-        className="mt-4 w-full resize-none rounded-xl border border-border bg-background/60 p-3 text-sm placeholder:text-muted focus:border-accent-a/60 focus:outline-none focus:ring-2 focus:ring-accent-a/20"
+        className="mt-4 w-full resize-y rounded-xl border border-border bg-background/60 p-3 text-sm placeholder:text-muted focus:border-accent-a/60 focus:outline-none focus:ring-2 focus:ring-accent-a/20"
       />
 
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-muted">
-          {ANSWER_MAX_LENGTH - answer.length} characters left
-        </span>
+        <span className="text-xs text-muted">{answer.length} characters</span>
         <div className="flex items-center gap-2">
           {error && <span className="text-xs text-danger">{error}</span>}
           <button

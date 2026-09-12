@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
+import { RichAnswer } from "@/components/wall/rich-answer";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/format";
 import type { AdminQuestion } from "@/lib/types";
 
@@ -35,12 +36,12 @@ export function HistoryItem({
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
       {item.parentId && (
-        <p className="mb-2 truncate text-xs text-accent-b">
+        <p dir="auto" className="mb-2 truncate text-xs text-accent-b">
           Follow-up to: &ldquo;{item.parentContent ?? "a previous question"}&rdquo;
         </p>
       )}
       <div className="flex items-start justify-between gap-3">
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
+        <p dir="auto" className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
         <button
           type="button"
           onClick={handleDelete}
@@ -53,9 +54,12 @@ export function HistoryItem({
       </div>
 
       {item.answer && (
-        <p className="mt-3 whitespace-pre-wrap border-t border-border pt-3 text-sm text-foreground/85">
-          {item.answer}
-        </p>
+        <div className="mt-3 border-t border-border pt-3">
+          <p dir="auto" className="whitespace-pre-wrap text-sm text-foreground/85">
+            {item.answer}
+          </p>
+          <RichAnswer text={item.answer} />
+        </div>
       )}
 
       <p className="mt-2 text-xs text-muted" title={formatAbsoluteTime(timestamp)}>

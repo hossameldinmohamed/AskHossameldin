@@ -1,13 +1,11 @@
-import { asc, desc, eq } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { isAdminRequest } from "@/lib/auth/require-admin";
-import { db } from "@/lib/db";
-import { questions } from "@/lib/db/schema";
+import { getAdminQuestions } from "@/lib/queries/admin";
+import type { QuestionStatus } from "@/lib/types";
 
-const parentQuestions = alias(questions, "parent_questions");
+const VALID_STATUSES: QuestionStatus[] = ["pending", "answered", "rejected"];
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest())) {
@@ -15,26 +13,16 @@ export async function GET(request: NextRequest) {
   }
 
   const status = request.nextUrl.searchParams.get("status") ?? "pending";
-  if (!["pending", "answered", "rejected"].includes(status)) {
+  if (!VALID_STATUSES.includes(status as QuestionStatus)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   }
 
-  const rows = await db
-    .select({
-      id: questions.id,
-      content: questions.content,
-      answer: questions.answer,
-      status: questions.status,
-      createdAt: questions.createdAt,
-      answeredAt: questions.answeredAt,
-      parentId: questions.parentId,
-      parentContent: parentQuestions.content,
-    })
-    .from(questions)
-    .leftJoin(parentQuestions, eq(questions.parentId, parentQuestions.id))
-    .where(eq(questions.status, status as "pending" | "answered" | "rejected"))
-    .orderBy(status === "pending" ? asc(questions.createdAt) : desc(questions.createdAt))
-    .limit(200);
+  const cursorParam = request.nextUrl.searchParams.get("cursor");
+  const cursor = cursorParam ? new Date(cursorParam) : null;
+  if (cursorParam && Number.isNaN(cursor?.getTime())) {
+    return NextResponse.json({ error: "Invalid cursor." }, { status: 400 });
+  }
 
-  return NextResponse.json({ items: rows });
+  const page = await getAdminQuestions(status as QuestionStatus, cursor);
+  return NextResponse.json(page);
 }

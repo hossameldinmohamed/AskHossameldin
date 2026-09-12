@@ -123,3 +123,11 @@ export async function getAnsweredCount(): Promise<number> {
     .where(eq(questions.status, "answered"));
   return row?.value ?? 0;
 }
+
+export async function getPendingCount(): Promise<number> {
+  const [row] = await db
+    .select({ value: sql<number>`count(*)::int` })
+    .from(questions)
+    .where(eq(questions.status, "pending"));
+  return row?.value ?? 0;
+}

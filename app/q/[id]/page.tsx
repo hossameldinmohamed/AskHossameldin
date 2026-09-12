@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SiteFooter } from "@/components/site-footer";
 import { QuestionCard } from "@/components/wall/question-card";
 import { getQuestionById } from "@/lib/queries/wall";
 import { siteConfig } from "@/lib/site";
@@ -48,7 +49,7 @@ export default async function QuestionPage({ params }: PageProps) {
       </Link>
 
       {question.parent && (
-        <p className="mt-4 text-xs text-muted">
+        <p dir="auto" className="mt-4 text-xs text-muted">
           In reply to{" "}
           <Link href={`/q/${question.parent.id}`} className="underline hover:text-foreground">
             &ldquo;{truncate(question.parent.content, 80)}&rdquo;
@@ -59,6 +60,8 @@ export default async function QuestionPage({ params }: PageProps) {
       <div className="mt-4">
         <QuestionCard item={question} index={0} isRoot={!question.parent} />
       </div>
+
+      <SiteFooter />
     </main>
   );
 }

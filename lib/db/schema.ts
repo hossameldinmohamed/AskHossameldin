@@ -52,3 +52,20 @@ export const rateLimitEvents = pgTable(
     index("rate_limit_events_key_created_idx").on(table.key, table.createdAt),
   ],
 );
+
+// One row per wall page view. Privacy-preserving by construction: only a
+// salted IP hash is stored (never a raw IP), same as elsewhere in this app.
+// Kept indefinitely (unlike rate_limit_events) since it backs all-time
+// visitor counts, not just short-lived abuse checks.
+export const pageViews = pgTable(
+  "page_views",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ipHash: text("ip_hash").notNull(),
+    viewedAt: timestamp("viewed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("page_views_viewed_at_idx").on(table.viewedAt),
+    index("page_views_ip_hash_idx").on(table.ipHash),
+  ],
+);
