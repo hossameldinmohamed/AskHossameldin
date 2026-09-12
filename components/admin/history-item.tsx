@@ -1,0 +1,61 @@
+"use client";
+
+import { useState } from "react";
+
+import { SpinnerIcon, TrashIcon } from "@/components/icons";
+import { formatRelativeTime } from "@/lib/format";
+import type { AdminQuestion } from "@/lib/types";
+
+export function HistoryItem({
+  item,
+  onDeleted,
+}: {
+  item: AdminQuestion;
+  onDeleted: (id: string) => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!window.confirm("Permanently delete this question? This can't be undone.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/questions/${item.id}`, { method: "DELETE" });
+      if (res.ok) {
+        onDeleted(item.id);
+      } else {
+        setDeleting(false);
+      }
+    } catch {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5">
+      <div className="flex items-start justify-between gap-3">
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.content}</p>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          aria-label="Delete question"
+          className="shrink-0 rounded-full p-2 text-muted transition-colors hover:bg-surface-hover hover:text-danger disabled:opacity-40"
+        >
+          {deleting ? <SpinnerIcon className="size-4 animate-spin-slow" /> : <TrashIcon className="size-4" />}
+        </button>
+      </div>
+
+      {item.answer && (
+        <p className="mt-3 whitespace-pre-wrap border-t border-border pt-3 text-sm text-foreground/85">
+          {item.answer}
+        </p>
+      )}
+
+      <p className="mt-2 text-xs text-muted">
+        {item.status === "answered" && item.answeredAt
+          ? `Answered ${formatRelativeTime(item.answeredAt)}`
+          : `Rejected · asked ${formatRelativeTime(item.createdAt)}`}
+      </p>
+    </div>
+  );
+}
