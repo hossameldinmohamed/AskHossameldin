@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 
+import { shapeArabicText } from "@/lib/arabic-shaping";
 import { getQuestionById } from "@/lib/queries/wall";
 import { stripUrls } from "@/lib/rich-content";
 import { siteConfig } from "@/lib/site";
@@ -30,9 +31,15 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
 
   // Links (e.g. a YouTube URL) are meaningful inline on the actual page
   // (rendered as an embed/chip there) but just wrap awkwardly as raw text
-  // in a static preview image, so they're stripped here only.
-  const questionText = question ? truncate(stripUrls(question.content), 140) : "Ask me anything";
-  const answerText = question?.answer ? truncate(stripUrls(question.answer), 200) : siteConfig.tagline;
+  // in a static preview image, so they're stripped here only. Arabic text
+  // is re-shaped into its joined presentation-form glyphs after truncating
+  // (Satori has no built-in Arabic contextual shaping - see arabic-shaping.ts).
+  const questionText = question
+    ? shapeArabicText(truncate(stripUrls(question.content), 140))
+    : "Ask me anything";
+  const answerText = question?.answer
+    ? shapeArabicText(truncate(stripUrls(question.answer), 200))
+    : siteConfig.tagline;
 
   return new ImageResponse(
     (
