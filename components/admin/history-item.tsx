@@ -6,8 +6,6 @@ import { SpinnerIcon, TrashIcon } from "@/components/icons";
 import { RichAnswer } from "@/components/wall/rich-answer";
 import { ShareButton } from "@/components/wall/share-button";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/format";
-import { stripUrls } from "@/lib/rich-content";
-import { siteConfig } from "@/lib/site";
 import type { AdminQuestion } from "@/lib/types";
 
 export function HistoryItem({
@@ -73,12 +71,7 @@ export function HistoryItem({
         </p>
 
         {item.status === "answered" && item.answer && (
-          <ShareButton
-            path={`/q/${item.id}`}
-            questionId={item.id}
-            title={`${siteConfig.title}: ${item.content}`}
-            text={`Q: ${stripUrls(item.content)}\n\nA: ${stripUrls(item.answer)}`.slice(0, 500)}
-          />
+          <ShareButton path={`/q/${item.id}`} questionId={item.id} />
         )}
       </div>
     </div>

@@ -9,22 +9,23 @@ interface ShareButtonProps {
   path: string;
   /** Id of the question, used to fetch its branded preview image for download. */
   questionId: string;
-  title: string;
-  text: string;
 }
 
+// Bare-link only, deliberately no pre-filled caption text. Each platform's
+// own crawler unfurls the link into a rich card using our og:image/title/
+// description - duplicating that as plain text was both redundant and, for
+// long non-Latin text with newlines, prone to mangled encoding depending on
+// how the receiving app's URL-scheme handoff re-parses the query string.
 const PLATFORMS = [
   {
     key: "x",
     label: "X",
-    shareUrl: (url: string, text: string) =>
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+    shareUrl: (url: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`,
   },
   {
     key: "whatsapp",
     label: "WA",
-    shareUrl: (url: string, text: string) =>
-      `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,
+    shareUrl: (url: string) => `https://wa.me/?text=${encodeURIComponent(url)}`,
   },
   {
     key: "facebook",
@@ -38,7 +39,7 @@ const PLATFORMS = [
   },
 ];
 
-export function ShareButton({ path, questionId, title, text }: ShareButtonProps) {
+export function ShareButton({ path, questionId }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -60,7 +61,7 @@ export function ShareButton({ path, questionId, title, text }: ShareButtonProps)
   async function handleClick() {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title, text, url: getUrl() });
+        await navigator.share({ url: getUrl() });
       } catch {
         // User cancelled the share sheet - not an error.
       }
@@ -117,7 +118,7 @@ export function ShareButton({ path, questionId, title, text }: ShareButtonProps)
           {PLATFORMS.map((platform) => (
             <a
               key={platform.key}
-              href={platform.shareUrl(getUrl(), text)}
+              href={platform.shareUrl(getUrl())}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMenuOpen(false)}
