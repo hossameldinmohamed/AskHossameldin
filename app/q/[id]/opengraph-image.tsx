@@ -1,7 +1,9 @@
 import { ImageResponse } from "next/og";
 
 import { getQuestionById } from "@/lib/queries/wall";
+import { stripUrls } from "@/lib/rich-content";
 import { siteConfig } from "@/lib/site";
+import { isRtlText } from "@/lib/text-direction";
 
 export const runtime = "nodejs";
 export const alt = `${siteConfig.title} — Q&A`;
@@ -12,12 +14,25 @@ function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+// Satori (the engine behind next/og's ImageResponse) doesn't apply the
+// Unicode bidi algorithm on its own, so Arabic/Hebrew text renders with its
+// words in the wrong visual order unless `direction`/`textAlign` are set
+// explicitly per text block.
+function textStyle(text: string) {
+  return isRtlText(text)
+    ? { direction: "rtl" as const, textAlign: "right" as const }
+    : { direction: "ltr" as const, textAlign: "left" as const };
+}
+
 export default async function OgImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const question = await getQuestionById(id);
 
-  const questionText = question ? truncate(question.content, 140) : "Ask me anything";
-  const answerText = question?.answer ? truncate(question.answer, 200) : siteConfig.tagline;
+  // Links (e.g. a YouTube URL) are meaningful inline on the actual page
+  // (rendered as an embed/chip there) but just wrap awkwardly as raw text
+  // in a static preview image, so they're stripped here only.
+  const questionText = question ? truncate(stripUrls(question.content), 140) : "Ask me anything";
+  const answerText = question?.answer ? truncate(stripUrls(question.answer), 200) : siteConfig.tagline;
 
   return new ImageResponse(
     (
@@ -64,6 +79,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
               fontWeight: 700,
               color: "#f5f5f7",
               lineHeight: 1.25,
+              ...textStyle(questionText),
             }}
           >
             {questionText}
@@ -75,6 +91,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
                 fontSize: 28,
                 color: "rgba(245,245,247,0.75)",
                 lineHeight: 1.4,
+                ...textStyle(answerText),
               }}
             >
               {answerText}
@@ -87,6 +104,8 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
         </div>
       </div>
     ),
-    { ...size },
+    // Explicit (matches the library default) so emoji in questions/answers
+    // render as actual colorful glyphs instead of missing-glyph boxes.
+    { ...size, emoji: "twemoji" },
   );
 }

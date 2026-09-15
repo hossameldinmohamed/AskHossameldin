@@ -4,6 +4,7 @@ import { LikeButton } from "@/components/wall/like-button";
 import { RichAnswer } from "@/components/wall/rich-answer";
 import { ShareButton } from "@/components/wall/share-button";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/format";
+import { stripUrls } from "@/lib/rich-content";
 import { siteConfig } from "@/lib/site";
 import { isRtlText } from "@/lib/text-direction";
 import type { PublicQuestion } from "@/lib/types";
@@ -29,7 +30,10 @@ function AnswerBlock({ item, isRoot }: { item: PublicQuestion; isRoot: boolean }
   if (!item.answer) return null;
 
   const rtl = isRtlText(item.answer);
-  const shareText = `Q: ${item.content}\n\nA: ${item.answer}`.slice(0, 500);
+  // Strip embedded URLs (e.g. a YouTube link inside the answer) so the
+  // share message only ever contains the one link the platform appends
+  // (the actual permalink) - not a second, confusing one from the text.
+  const shareText = `Q: ${stripUrls(item.content)}\n\nA: ${stripUrls(item.answer)}`.slice(0, 500);
 
   return (
     <div className={isRoot ? "mt-4 border-t border-border pt-4" : "mt-3 border-t border-border pt-3"}>

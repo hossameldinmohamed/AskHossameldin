@@ -39,3 +39,18 @@ export function extractLinks(text: string): ExtractedLinks {
 
   return { youtubeIds, otherLinks: otherLinks.slice(0, 5) };
 }
+
+/**
+ * Strips URLs out of text meant for a social share message. Without this,
+ * an answer containing e.g. a YouTube link would end up with that link
+ * embedded mid-text *and* the actual permalink appended by the share
+ * intent - two different links in one message, confusing whichever one is
+ * "the" link to the question.
+ */
+export function stripUrls(text: string): string {
+  return text
+    .replace(URL_PATTERN, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
