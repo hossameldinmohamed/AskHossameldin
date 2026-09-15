@@ -62,6 +62,7 @@ function AnswerBlock({ item, isRoot }: { item: PublicQuestion; isRoot: boolean }
               />
               <ShareButton
                 path={`/q/${item.id}`}
+                questionId={item.id}
                 title={`${siteConfig.title}: ${item.content}`}
                 text={shareText}
               />

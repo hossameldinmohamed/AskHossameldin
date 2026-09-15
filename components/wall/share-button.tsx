@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CheckIcon, LinkIcon, ShareIcon } from "@/components/icons";
+import { CheckIcon, DownloadIcon, LinkIcon, ShareIcon } from "@/components/icons";
 
 interface ShareButtonProps {
   /** Path to the permalink, e.g. `/q/<id>` - resolved against the current origin. */
   path: string;
+  /** Id of the question, used to fetch its branded preview image for download. */
+  questionId: string;
   title: string;
   text: string;
 }
@@ -36,9 +38,10 @@ const PLATFORMS = [
   },
 ];
 
-export function ShareButton({ path, title, text }: ShareButtonProps) {
+export function ShareButton({ path, questionId, title, text }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,6 +80,27 @@ export function ShareButton({ path, title, text }: ShareButtonProps) {
     }
   }
 
+  async function downloadImage() {
+    setDownloading(true);
+    try {
+      const res = await fetch(`/q/${questionId}/opengraph-image`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${questionId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+      setMenuOpen(false);
+    } catch {
+      // Silently do nothing rather than error - this is a convenience extra.
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -102,6 +126,16 @@ export function ShareButton({ path, title, text }: ShareButtonProps) {
               {platform.label}
             </a>
           ))}
+          <button
+            type="button"
+            onClick={downloadImage}
+            disabled={downloading}
+            aria-label="Download preview image"
+            title="Download preview image (attach it manually on X)"
+            className="flex size-8 items-center justify-center rounded-full bg-background text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground disabled:opacity-50"
+          >
+            <DownloadIcon className="size-3.5" />
+          </button>
           <button
             type="button"
             onClick={copyLink}
