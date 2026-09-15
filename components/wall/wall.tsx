@@ -40,9 +40,7 @@ export function Wall({ initialItems, initialCursor }: WallProps) {
       <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-6 pb-24 text-center">
         <SparkleIcon className="size-7 text-accent-b" />
         <h2 className="text-lg font-semibold">Be the first to ask</h2>
-        <p className="text-sm text-muted">
-          Send an anonymous question above — it&apos;ll show up here once it&apos;s answered.
-        </p>
+        <p className="text-sm text-muted">Ask above, and it&apos;ll show up here as soon as it&apos;s answered.</p>
       </div>
     );
   }

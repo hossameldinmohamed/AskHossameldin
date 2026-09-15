@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { HistoryItem } from "@/components/admin/history-item";
 import { PendingItem } from "@/components/admin/pending-item";
@@ -15,6 +15,9 @@ const TABS: { key: QuestionStatus; label: string }[] = [
   { key: "answered", label: "Answered" },
   { key: "rejected", label: "Rejected" },
 ];
+
+// How often to check for newly-arrived questions without a manual reload.
+const POLL_INTERVAL_MS = 2 * 60 * 1000;
 
 interface TabState {
   items: AdminQuestion[];
@@ -62,6 +65,41 @@ export function AdminDashboard({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pendingCountState, setPendingCountState] = useState(pendingCount);
+  const activeTabRef = useRef(activeTab);
+  const pendingCountRef = useRef(pendingCount);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    pendingCountRef.current = pendingCountState;
+  }, [pendingCountState]);
+
+  // Periodically check for newly-arrived pending questions so you don't
+  // have to keep manually reloading the page to notice them.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const countRes = await fetch("/api/admin/pending-count");
+        if (!countRes.ok) return;
+        const { count } = await countRes.json();
+        if (count === pendingCountRef.current) return;
+
+        setPendingCountState(count);
+        if (activeTabRef.current !== "pending") return;
+
+        const listRes = await fetch("/api/admin/questions?status=pending");
+        if (!listRes.ok) return;
+        const data = await listRes.json();
+        setCache((prev) => ({ ...prev, pending: { items: data.items, cursor: data.nextCursor } }));
+      } catch {
+        // Background convenience poll - silently retry next tick.
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
 
   async function selectTab(tab: QuestionStatus) {
     setActiveTab(tab);

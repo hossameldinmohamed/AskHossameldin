@@ -103,7 +103,7 @@ export function AskForm({
         <div>
           <h3 className="text-lg font-semibold">Question sent!</h3>
           <p className="mt-1 text-sm text-muted">
-            It&apos;s completely anonymous. If it gets answered, it&apos;ll show up on the wall.
+            If it gets answered, you&apos;ll find it right here on the wall.
           </p>
         </div>
         <button
