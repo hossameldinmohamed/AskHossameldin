@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -44,11 +45,22 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.title,
+    statusBarStyle: "black-translucent",
+  },
+  other: {
+    // Next only emits the modern unprefixed "mobile-web-app-capable" tag;
+    // older iOS versions specifically look for this prefixed one.
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#07070c",
   colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -57,7 +69,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${notoSansArabic.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        {children}
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }
