@@ -44,6 +44,9 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // The menu (and this) only ever renders after a user click, well after
+  // hydration, so there's no SSR/client mismatch to guard against here.
+  const canNativeShare = typeof navigator !== "undefined" && Boolean(navigator.share);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -58,18 +61,6 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
     return new URL(path, window.location.origin).toString();
   }
 
-  async function handleClick() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ url: getUrl() });
-      } catch {
-        // User cancelled the share sheet - not an error.
-      }
-      return;
-    }
-    setMenuOpen((open) => !open);
-  }
-
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(getUrl());
@@ -78,6 +69,15 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard API unavailable - silently do nothing rather than error.
+    }
+  }
+
+  async function nativeShare() {
+    try {
+      await navigator.share({ url: getUrl() });
+      setMenuOpen(false);
+    } catch {
+      // User cancelled the share sheet - not an error.
     }
   }
 
@@ -106,7 +106,7 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={handleClick}
+        onClick={() => setMenuOpen((open) => !open)}
         className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
       >
         {copied ? <CheckIcon className="size-3.5 text-success" /> : <ShareIcon className="size-3.5" />}
@@ -115,6 +115,15 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
 
       {menuOpen && (
         <div className="absolute right-0 top-full z-10 mt-1 flex animate-scale-in items-center gap-1 rounded-full border border-border bg-surface p-1.5 shadow-lg">
+          <button
+            type="button"
+            onClick={copyLink}
+            aria-label="Copy link"
+            title="Copy link"
+            className="flex size-8 items-center justify-center rounded-full bg-background text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <LinkIcon className="size-3.5" />
+          </button>
           {PLATFORMS.map((platform) => (
             <a
               key={platform.key}
@@ -137,14 +146,17 @@ export function ShareButton({ path, questionId }: ShareButtonProps) {
           >
             <DownloadIcon className="size-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={copyLink}
-            aria-label="Copy link"
-            className="flex size-8 items-center justify-center rounded-full bg-background text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground"
-          >
-            <LinkIcon className="size-3.5" />
-          </button>
+          {canNativeShare && (
+            <button
+              type="button"
+              onClick={nativeShare}
+              aria-label="More sharing options"
+              title="More sharing options"
+              className="flex size-8 items-center justify-center rounded-full bg-background text-foreground/80 transition-colors hover:bg-surface-hover hover:text-foreground"
+            >
+              <ShareIcon className="size-3.5" />
+            </button>
+          )}
         </div>
       )}
     </div>
