@@ -4,6 +4,8 @@ export interface PublicQuestion {
   answer: string | null;
   answeredAt: string | null;
   followUps?: PublicQuestion[];
+  likeCount?: number;
+  likedByViewer?: boolean;
 }
 
 export type QuestionStatus = "pending" | "answered" | "rejected";

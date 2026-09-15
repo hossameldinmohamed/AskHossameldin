@@ -13,21 +13,18 @@ import { getClientIp, hashIp } from "@/lib/security/ip";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [page, totalCount, isAdmin, requestHeaders] = await Promise.all([
-    getWallPage(null),
+  const [isAdmin, requestHeaders] = await Promise.all([isAdminRequest(), headers()]);
+  const viewerIpHash = await hashIp(getClientIp(requestHeaders));
+
+  const [page, totalCount] = await Promise.all([
+    getWallPage(null, viewerIpHash),
     getAnsweredCount(),
-    isAdminRequest(),
-    headers(),
   ]);
 
   // Don't count the admin's own visits, and don't block the response on
   // recording the view - it runs after the page has already been sent.
   if (!isAdmin) {
-    after(async () => {
-      const ip = getClientIp(requestHeaders);
-      const ipHash = await hashIp(ip);
-      await recordPageView(ipHash);
-    });
+    after(() => recordPageView(viewerIpHash));
   }
 
   return (

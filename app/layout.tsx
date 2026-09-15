@@ -24,6 +24,7 @@ const notoSansArabic = Noto_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url),
   title: {
     default: `${siteConfig.title} — Anonymous Q&A`,
     template: `%s — ${siteConfig.title}`,
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${siteConfig.title} — Anonymous Q&A`,
     description: siteConfig.description,
   },

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { questions } from "@/lib/db/schema";
+import { getLikeCounts, getLikedSet } from "@/lib/queries/likes";
 import type { PublicQuestion } from "@/lib/types";
 
 export const WALL_PAGE_SIZE = 12;
@@ -18,11 +19,30 @@ export interface WallPage {
   nextCursor: string | null;
 }
 
+/** Flattens roots + their follow-ups and fills in likeCount/likedByViewer in place. */
+async function attachLikeData(items: PublicQuestion[], viewerIpHash: string | null): Promise<void> {
+  const flat = items.flatMap((item) => [item, ...(item.followUps ?? [])]);
+  const ids = flat.map((item) => item.id);
+  if (ids.length === 0) return;
+
+  const [counts, liked] = await Promise.all([
+    getLikeCounts(ids),
+    viewerIpHash ? getLikedSet(ids, viewerIpHash) : Promise.resolve(new Set<string>()),
+  ]);
+
+  for (const item of flat) {
+    item.likeCount = counts.get(item.id) ?? 0;
+    item.likedByViewer = liked.has(item.id);
+  }
+}
+
 /**
  * One page of the public wall: root answered questions (paginated by
  * answeredAt cursor), each with its own answered follow-ups nested inline.
+ * `viewerIpHash` (when known) fills in whether the current visitor already
+ * liked each item, so the button renders in the right state on first paint.
  */
-export async function getWallPage(cursor: Date | null): Promise<WallPage> {
+export async function getWallPage(cursor: Date | null, viewerIpHash: string | null = null): Promise<WallPage> {
   const rootFilter = and(
     eq(questions.status, "answered"),
     isNull(questions.parentId),
@@ -69,6 +89,8 @@ export async function getWallPage(cursor: Date | null): Promise<WallPage> {
     followUps: followUpsByParent.get(root.id),
   }));
 
+  await attachLikeData(items, viewerIpHash);
+
   return { items, nextCursor };
 }
 
@@ -77,7 +99,10 @@ export interface PermalinkQuestion extends PublicQuestion {
 }
 
 /** A single answered question (root or follow-up) for its /q/[id] permalink page. */
-export async function getQuestionById(id: string): Promise<PermalinkQuestion | null> {
+export async function getQuestionById(
+  id: string,
+  viewerIpHash: string | null = null,
+): Promise<PermalinkQuestion | null> {
   const [row] = await db
     .select({ ...publicFields, parentId: questions.parentId, status: questions.status })
     .from(questions)
@@ -106,7 +131,7 @@ export async function getQuestionById(id: string): Promise<PermalinkQuestion | n
       : undefined;
   }
 
-  return {
+  const result: PermalinkQuestion = {
     id: row.id,
     content: row.content,
     answer: row.answer,
@@ -114,6 +139,10 @@ export async function getQuestionById(id: string): Promise<PermalinkQuestion | n
     followUps,
     parent,
   };
+
+  await attachLikeData([result], viewerIpHash);
+
+  return result;
 }
 
 export async function getAnsweredCount(): Promise<number> {

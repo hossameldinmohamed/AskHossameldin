@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
   }
 
-  const page = await getWallPage(cursor);
+  const ipHash = await hashIp(getClientIp(request.headers));
+  const page = await getWallPage(cursor, ipHash);
   return NextResponse.json(page);
 }
 

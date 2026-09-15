@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { QuestionCard } from "@/components/wall/question-card";
 import { getQuestionById } from "@/lib/queries/wall";
+import { getClientIp, hashIp } from "@/lib/security/ip";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +40,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function QuestionPage({ params }: PageProps) {
   const { id } = await params;
-  const question = await getQuestionById(id);
+  const viewerIpHash = await hashIp(getClientIp(await headers()));
+  const question = await getQuestionById(id, viewerIpHash);
 
   if (!question) notFound();
 

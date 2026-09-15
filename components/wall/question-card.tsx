@@ -1,14 +1,17 @@
 import { HelpIcon } from "@/components/icons";
 import { FollowUpButton } from "@/components/wall/follow-up-button";
+import { LikeButton } from "@/components/wall/like-button";
 import { RichAnswer } from "@/components/wall/rich-answer";
 import { ShareButton } from "@/components/wall/share-button";
 import { formatAbsoluteTime, formatRelativeTime } from "@/lib/format";
 import { siteConfig } from "@/lib/site";
+import { isRtlText } from "@/lib/text-direction";
 import type { PublicQuestion } from "@/lib/types";
 
 function QuestionBlock({ item }: { item: PublicQuestion }) {
+  const rtl = isRtlText(item.content);
   return (
-    <div className="flex items-start gap-3">
+    <div className={`flex items-start gap-3 ${rtl ? "flex-row-reverse" : ""}`}>
       <span
         className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted"
         aria-label="Anonymous question"
@@ -25,11 +28,12 @@ function QuestionBlock({ item }: { item: PublicQuestion }) {
 function AnswerBlock({ item, isRoot }: { item: PublicQuestion; isRoot: boolean }) {
   if (!item.answer) return null;
 
+  const rtl = isRtlText(item.answer);
   const shareText = `Q: ${item.content}\n\nA: ${item.answer}`.slice(0, 500);
 
   return (
     <div className={isRoot ? "mt-4 border-t border-border pt-4" : "mt-3 border-t border-border pt-3"}>
-      <div className="flex items-start gap-3">
+      <div className={`flex items-start gap-3 ${rtl ? "flex-row-reverse" : ""}`}>
         <span
           className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-xs font-bold text-black ring-2 ring-accent-b/20 ring-offset-2 ring-offset-surface"
           title={siteConfig.name}
@@ -51,6 +55,11 @@ function AnswerBlock({ item, isRoot }: { item: PublicQuestion; isRoot: boolean }
               </p>
             )}
             <div className="-mr-2 flex items-center gap-1">
+              <LikeButton
+                questionId={item.id}
+                initialLiked={item.likedByViewer ?? false}
+                initialCount={item.likeCount ?? 0}
+              />
               <ShareButton
                 path={`/q/${item.id}`}
                 title={`${siteConfig.title}: ${item.content}`}

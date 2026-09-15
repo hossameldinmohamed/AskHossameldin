@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { HistoryItem } from "@/components/admin/history-item";
 import { PendingItem } from "@/components/admin/pending-item";
-import { ArrowDownIcon, SpinnerIcon } from "@/components/icons";
+import { ArrowDownIcon, LinkIcon, SpinnerIcon } from "@/components/icons";
 import type { AnalyticsSummary } from "@/lib/queries/analytics";
 import type { AdminQuestion, QuestionStatus } from "@/lib/types";
 
@@ -146,13 +147,24 @@ export function AdminDashboard({
     <main className="mx-auto min-h-screen max-w-2xl px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Moderation</h1>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-full border border-border px-4 py-1.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
-        >
-          Log out
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            <LinkIcon className="size-3.5" />
+            View wall
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-full border border-border px-4 py-1.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            Log out
+          </button>
+        </div>
       </div>
 
       <AnalyticsBar analytics={analytics} />

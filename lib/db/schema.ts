@@ -1,5 +1,5 @@
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const questionStatus = pgEnum("question_status", [
   "pending",
@@ -67,5 +67,24 @@ export const pageViews = pgTable(
   (table) => [
     index("page_views_viewed_at_idx").on(table.viewedAt),
     index("page_views_ip_hash_idx").on(table.ipHash),
+  ],
+);
+
+// One row per (question, visitor) like. The unique index doubles as the
+// dedup/toggle mechanism: liking again when a row already exists removes it
+// (unlike) rather than creating a duplicate.
+export const questionLikes = pgTable(
+  "question_likes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    questionId: uuid("question_id")
+      .notNull()
+      .references(() => questions.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("question_likes_question_ip_unique").on(table.questionId, table.ipHash),
+    index("question_likes_question_id_idx").on(table.questionId),
   ],
 );
